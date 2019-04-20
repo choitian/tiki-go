@@ -30,7 +30,7 @@ func (c *SafeCounter) Value(key string) int {
 
 func main() {
 	c := SafeCounter{v: 0}
-	for i := 0; i < 10000000; i++ {
+	for i := 0; i < 666666; i++ {
 		go c.Inc("somekey")
 	}
 
