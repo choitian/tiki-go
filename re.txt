@@ -1,0 +1,62 @@
+"void"			{ "VOID" }
+"int"			{ "INT" }
+"float"			{ "FLOAT" }
+"boolean"		{ "BOOLEAN" }
+"class"			{ "CLASS" }
+"static"		{ "STATIC" }
+"if"			{ "IF" }
+"else"			{ "ELSE" }
+"for"			{ "FOR" }
+"while"			{ "WHILE" }
+"break"			{ "BREAK" }
+"continue"		{ "CONTINUE" }
+"return"		{ "RETURN" }
+"new"			{ "NEW" }
+"true"			{ "TRUE" }
+"false"			{ "FALSE" }
+"null"			{ "NULL" }
+"import"		{ "IMPORT" }
+
+@[a-zA-Z_]([0-9a-zA-Z_])*		{ "ANNOTATION" }
+[a-zA-Z_]([0-9a-zA-Z_])*		{ "ID" }
+[0-9]+				{ "INTEGER" }
+[0-9]*"."[0-9]+			{ "FLOATING" }
+
+\"(\\.|[^\\"])*\"	{ "STRING" }
+\[[ \t]*\]				{ "ARRAY" }
+
+"..."		{ "ELLIPSE" }
+
+"="			{ "ASSIGN" }
+"!"			{ "NOT" }
+"&&"		{ "AND" }
+"||"		{ "OR" }
+"<"			{ "LESS" }
+">"			{ "GREAT" }
+"<="		{ "LESSE" }
+">="		{ "GREATE" }
+"=="		{ "EQUAL" }
+"!="		{ "UNEQUAL" }
+"++"		{ "INC" }
+"--"		{ "DEC" }
+"+"			{ "ADD" }
+"-"			{ "SUB" }
+"*"			{ "MUL" }
+"/"			{ "DIV" }
+"%"			{ "MOD" }
+"."         { "DOT" }
+","			{ "COMMA" }
+";"			{ "SEMICOLON" }
+"("			{ "LPAREN" }
+")"			{ "RPAREN" }
+"["			{ "LBRACKET" }
+"]"			{ "RBRACKET" }
+"{"			{ "LBRACE" }
+"}"			{ "RBRACE" }
+
+\/\*(.|\n)*\*\/		{ "MULTILINE_COMMENT" }
+\/\/.*\n			{ "COMMENT" }
+
+\n 				{ "NEWLINE" }
+[ \t\r\v\f]		{ "SKIP" }
+.				{ "SKIP" }
