@@ -1,170 +1,170 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tokens>
-	<token tok="VOID">
+	<token token="VOID">
 		<regx>void</regx>
 	</token>
-	<token tok="INT">
+	<token token="INT">
 		<regx>int</regx>
 	</token>
-	<token tok="FLOAT">
+	<token token="FLOAT">
 		<regx>float</regx>
 	</token>
-	<token tok="BOOLEAN">
+	<token token="BOOLEAN">
 		<regx>boolean</regx>
 	</token>
-	<token tok="CLASS">
+	<token token="CLASS">
 		<regx>class</regx>
 	</token>
-	<token tok="STATIC">
+	<token token="STATIC">
 		<regx>static</regx>
 	</token>
-	<token tok="IF">
+	<token token="IF">
 		<regx>if</regx>
 	</token>
-	<token tok="ELSE">
+	<token token="ELSE">
 		<regx>else</regx>
 	</token>
-	<token tok="FOR">
+	<token token="FOR">
 		<regx>for</regx>
 	</token>
-	<token tok="WHILE">
+	<token token="WHILE">
 		<regx>while</regx>
 	</token>
-	<token tok="BREAK">
+	<token token="BREAK">
 		<regx>break</regx>
 	</token>
-	<token tok="CONTINUE">
+	<token token="CONTINUE">
 		<regx>continue</regx>
 	</token>
-	<token tok="RETURN">
+	<token token="RETURN">
 		<regx>return</regx>
 	</token>
-	<token tok="NEW">
+	<token token="NEW">
 		<regx>new</regx>
 	</token>
-	<token tok="TRUE">
+	<token token="TRUE">
 		<regx>true</regx>
 	</token>
-	<token tok="FALSE">
+	<token token="FALSE">
 		<regx>false</regx>
 	</token>
-	<token tok="NULL">
+	<token token="NULL">
 		<regx>null</regx>
 	</token>
-	<token tok="IMPORT">
+	<token token="IMPORT">
 		<regx>import</regx>
 	</token>
 
-	<token tok="ELLIPSE">
+	<token token="ELLIPSE">
 		<regx>\.\.\.</regx>
 	</token>
-	<token tok="ASSIGN">
+	<token token="ASSIGN">
 		<regx>=</regx>
 	</token>
-	<token tok="NOT">
+	<token token="NOT">
 		<regx>!</regx>
 	</token>
-	<token tok="AND">
+	<token token="AND">
 		<regx>&amp;&amp;</regx>
 	</token>
-	<token tok="OR">
+	<token token="OR">
 		<regx>||</regx>
 	</token>
-	<token tok="LESS">
+	<token token="LESS">
 		<regx>&lt;</regx>
 	</token>
-	<token tok="GREAT">
+	<token token="GREAT">
 		<regx>&gt;</regx>
 	</token>
-	<token tok="LESSE">
+	<token token="LESSE">
 		<regx>&lt;=</regx>
 	</token>
-	<token tok="GREATE">
+	<token token="GREATE">
 		<regx>&gt;=</regx>
 	</token>
-	<token tok="EQUAL">
+	<token token="EQUAL">
 		<regx>==</regx>
 	</token>
-	<token tok="UNEQUAL">
+	<token token="UNEQUAL">
 		<regx>!=</regx>
 	</token>
-	<token tok="INC">
+	<token token="INC">
 		<regx>\+\+</regx>
 	</token>
-	<token tok="DEC">
+	<token token="DEC">
 		<regx>--</regx>
 	</token>
-	<token tok="ADD">
+	<token token="ADD">
 		<regx>\+</regx>
 	</token>
-	<token tok="SUB">
+	<token token="SUB">
 		<regx>-</regx>
 	</token>
-	<token tok="MUL">
+	<token token="MUL">
 		<regx>\*</regx>
 	</token>
-	<token tok="DIV">
+	<token token="DIV">
 		<regx>/</regx>
 	</token>
-	<token tok="MOD">
+	<token token="MOD">
 		<regx>%</regx>
 	</token>
-	<token tok="DOT">
+	<token token="DOT">
 		<regx>\.</regx>
 	</token>
-	<token tok="COMMA">
+	<token token="COMMA">
 		<regx>\,</regx>
 	</token>
-	<token tok="SEMICOLON">
+	<token token="SEMICOLON">
 		<regx>;</regx>
 	</token>
-	<token tok="LPAREN">
+	<token token="LPAREN">
 		<regx>\(</regx>
 	</token>
-	<token tok="RPAREN">
+	<token token="RPAREN">
 		<regx>\)</regx>
 	</token>
-	<token tok="LBRACKET">
+	<token token="LBRACKET">
 		<regx>\[</regx>
 	</token>
-	<token tok="RBRACKET">
+	<token token="RBRACKET">
 		<regx>\]</regx>
 	</token>
-	<token tok="LBRACE">
+	<token token="LBRACE">
 		<regx>\{</regx>
 	</token>
-	<token tok="RBRACE">
+	<token token="RBRACE">
 		<regx>\}</regx>
 	</token>
 
-	<token tok="ANNOTATION">
+	<token token="ANNOTATION">
 		<regx>@[\a_]\w*</regx>
 	</token>
-	<token tok="ID">
-		<regx>[\a_][\a\d_]*</regx>
+	<token token="ID">
+		<regx>[\a_]\w*</regx>
 	</token>
-	<token tok="INTEGER">
+	<token token="INTEGER">
 		<regx>\d+</regx>
 	</token>
-	<token tok="FLOATING">
+	<token token="FLOATING">
 		<regx>\d*\.\d+</regx>
 	</token>
-	<token tok="STRING">
+	<token token="STRING">
 		<regx>&quot;(\\.|[^&quot;])*&quot;</regx>
 	</token>
-	<token tok="ARRAY">
+	<token token="ARRAY">
 		<regx>\[\s*\]</regx>
 	</token>
-	<token tok="MULTILINE_COMMENT">
+	<token token="MULTILINE_COMMENT">
 		<regx>/\*(.|\n)*\*/</regx>
 	</token>
-	<token tok="COMMENT">
+	<token token="COMMENT">
 		<regx>//.*\n</regx>
 	</token>
-	<token tok="WHITESPCE">
+	<token token="WHITESPCE">
 		<regx>\s</regx>
 	</token>
-	<token tok="SKIP">
+	<token token="SKIP">
 		<regx>.</regx>
 	</token>
 </tokens>

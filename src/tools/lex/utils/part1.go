@@ -1,12 +1,9 @@
-package lexutil
+package utils
 
 import (
 	"bufio"
-	"encoding/xml"
 	"os"
 	"regexp"
-	"strconv"
-	"strings"
 )
 
 func LeadLines(path string) ([]string, error) {
