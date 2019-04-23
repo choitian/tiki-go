@@ -12,13 +12,13 @@ const symbolEnd string = "__END__"
 const symbolNull string = "__NULL__"
 const symbolStart string = "__START__"
 
-type FstSet map[string]bool
+type StringSet map[string]bool
 type Grammar struct {
 	Productions []Production
 
-	FST        map[string]FstSet
+	FST        map[string]StringSet
 	IsTerminal map[string]bool
-	IsNullable map[string]bool
+	Nullable   StringSet
 }
 
 type Production struct {
@@ -35,56 +35,57 @@ func (prod *Production) IsNull() bool {
 }
 func (gram *Grammar) computeAttributes() {
 	//initialize maps
-	gram.FST = make(map[string]FstSet)
+	gram.FST = make(map[string]StringSet)
 	gram.IsTerminal = make(map[string]bool)
-	gram.IsNullable = make(map[string]bool)
-	//initialize IsTerminal & IsNullable
-	for _, p := range gram.Productions {
-		head := p.Head
+	gram.Nullable = make(StringSet)
+	//initialize IsTerminal & Nullable
+	for _, prod := range gram.Productions {
+		head := prod.Head
 		gram.IsTerminal[head] = false
-		gram.IsNullable[head] = p.IsNull()
-		gram.FST[head] = FstSet{}
+		gram.FST[head] = StringSet{}
 	}
 	//if not exist in IsTerminal as not being a head,then Is Terminal.
-	for _, p := range gram.Productions {
-		for _, symbol := range p.Nodes {
+	for _, prod := range gram.Productions {
+		for _, symbol := range prod.Nodes {
 			if _, ok := gram.IsTerminal[symbol]; !ok {
 				gram.IsTerminal[symbol] = true
-				gram.FST[symbol] = FstSet{symbol: true}
+				gram.FST[symbol] = StringSet{symbol: true}
 			}
 		}
 	}
 	//iterate util nothing changed
-	for somethingChanged := true; somethingChanged; {
-		somethingChanged = false
-		for _, p := range gram.Productions {
-			head := p.Head
-			oldFSTSize := 0
-			if fst, ok := gram.FST[head]; ok {
-				oldFSTSize = len(fst)
-			}
-			oldNullable := gram.IsNullable[head]
-
-			if !p.IsNull() {
-				for i, symbol := range p.Nodes {
+	for nothingChanged := false; !nothingChanged; {
+		nothingChanged = true
+		for _, prod := range gram.Productions {
+			head := prod.Head
+			if !prod.IsNull() {
+				for i, symbol := range prod.Nodes {
 					//add FST of symbol to head's
 					if fst, ok := gram.FST[symbol]; ok {
 						for val, _ := range fst {
-							gram.FST[head][val] = true
+							if _, included := gram.FST[head][val]; !included {
+								gram.FST[head][val] = true
+								nothingChanged = false
+							}
 						}
 					}
 
-					if !gram.IsNullable[symbol] {
+					if !gram.Nullable[symbol] {
 						break
 					}
-					if i == len(p.Nodes)-1 {
-						gram.IsNullable[head] = true
+
+					if i == len(prod.Nodes)-1 {
+						if _, included := gram.Nullable[head]; !included {
+							gram.Nullable[head] = true
+							nothingChanged = false
+						}
 					}
 				}
-			}
-
-			if (oldFSTSize != len(gram.FST[head])) || (oldNullable != gram.IsNullable[head]) {
-				somethingChanged = true
+			} else {
+				if _, included := gram.Nullable[head]; !included {
+					gram.Nullable[head] = true
+					nothingChanged = false
+				}
 			}
 		}
 	}
