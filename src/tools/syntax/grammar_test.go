@@ -13,7 +13,7 @@ func TestGrammerDescription(t *testing.T) {
 	gram := NewGrammar("test/dnf.txt")
 	/*
 		for _, p := range gram.Productions {
-		log.Printf("%v\n", &p)
+			log.Printf("%v\n", &p)
 		}
 	*/
 	for k, v := range gram.FST {
