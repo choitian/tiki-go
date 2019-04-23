@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"os"
 	"regexp"
+	"sort"
+	"strings"
 )
 
 func ReadTextLines(path string) ([]string, error) {
@@ -32,4 +34,24 @@ func RegxNamedMap(r *regexp.Regexp, str string) map[string]string {
 		}
 	}
 	return subMatchMap
+}
+func MatchNamedMap(r *regexp.Regexp, match []string) map[string]string {
+	if match == nil {
+		return nil
+	}
+	subMatchMap := make(map[string]string)
+	for i, name := range r.SubexpNames() {
+		if i != 0 && name != "" {
+			subMatchMap[name] = match[i]
+		}
+	}
+	return subMatchMap
+}
+func StringBoolMapKeys(m map[string]bool) []string {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i int, j int) bool { return strings.Compare(keys[i], keys[j]) < 0 })
+	return keys
 }

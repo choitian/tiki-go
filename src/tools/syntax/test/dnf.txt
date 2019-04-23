@@ -1,0 +1,301 @@
+unit:
+class_definitions															{ decl_unit(class_definitions<ListNode>) }
+| imports class_definitions													{ decl_unit(imports<ListNode>,class_definitions<ListNode>) }	
+;
+
+imports
+: import																	{ ListNode(node) }
+| imports import															{ ListNode(list<ListNode>, node) }
+;
+
+import
+: IMPORT package_name SEMICOLON												{ decl_import(package_name<decl_package_name>) }
+;
+
+package_name
+: ID																		{ decl_package_name(id=$0) }
+| package_name DOT ID														{ decl_package_name(list<decl_package_name>, id=$2) }
+;
+
+class_definitions
+: class_definition															{ ListNode(node) }
+| class_definitions class_definition										{ ListNode(list<ListNode>, node) }
+;
+
+annotation
+: ANNOTATION																{ decl_annotation(key=$0) }
+| ANNOTATION LPAREN annotation_elements RPAREN								{ decl_annotation(key=$0,elements<ListNode>) }	
+;
+
+annotation_elements
+: annotation_element														{ ListNode(node) }
+| annotation_elements COMMA annotation_element								{ ListNode(list<ListNode>, node) }
+;
+
+annotation_element
+: ID ASSIGN	STRING															{ decl_annotation_element(key=$0,value=$2) }
+;
+
+class_definition
+: CLASS ID LBRACE  RBRACE													{ decl_class_definition(name=$1) }	
+| CLASS ID LBRACE class_declarations RBRACE									{ decl_class_definition(name=$1,class_declarations<ListNode>) }	
+| annotation CLASS ID LBRACE  RBRACE										{ decl_class_definition(annotation<decl_annotation>, name=$2) }	
+| annotation CLASS ID LBRACE class_declarations RBRACE						{ decl_class_definition(annotation<decl_annotation>, name=$2, class_declarations<ListNode>) }	
+;
+
+class_declarations
+: declaration SEMICOLON								    					{ ListNode(node) }
+| class_declarations declaration SEMICOLON		    						{ ListNode(list<ListNode>, node) }
+| method_definition															{ ListNode(node) }
+| class_declarations method_definition										{ ListNode(list<ListNode>, node) }
+| construct_definition														{ ListNode(node) }
+| class_declarations construct_definition									{ ListNode(list<ListNode>, node) }
+;
+
+declaration
+: specifiers declarator							   							{ decl_declaration(specifiers<decl_specifiers>,declarator<decl_declarator>) }
+| specifiers declarator ASSIGN initializer									{ decl_declaration(specifiers<decl_specifiers>,declarator<decl_declarator>,initializer<decl_initializer>) }
+;
+
+initializer
+: assignment_exp															{ decl_initializer(exp<Exp>) }										
+| array_initializer															{ decl_initializer(array_initializer<decl_array_initializer>) }
+;
+
+array_initializer
+: LBRACE RBRACE																{ decl_array_initializer() }
+| LBRACE COMMA RBRACE														{ decl_array_initializer() }
+| LBRACE initializers RBRACE												{ decl_array_initializer(initializers<ListNode>) }
+| LBRACE initializers COMMA RBRACE											{ decl_array_initializer(initializers<ListNode>) }
+;
+
+initializers
+: initializer																{ ListNode(node) }
+| initializers COMMA initializer											{ ListNode(list<ListNode>, node) }
+;
+
+method_definition
+: specifiers declarator compound_stmt										{ decl_method_definition(specifiers<decl_specifiers>,declarator<decl_declarator>,compound_stmt<stmt_compound>) }
+;
+
+construct_definition
+: declarator compound_stmt													{ decl_method_definition(declarator<decl_declarator>,compound_stmt<stmt_compound>) }
+;
+
+specifiers
+: type_specifier															{ decl_specifiers(type_specifier<decl_specifier>) }
+| storage_specifier type_specifier											{ decl_specifiers(storage_specifier<decl_specifier>,type_specifier<decl_specifier>) }						
+;
+
+type_specifier
+: primitive_type												
+| scope_name																{ decl_specifier(kind=class,scope_name<exp_SCOPE_NAME>) }							
+;
+
+primitive_type
+: VOID																		{ decl_specifier(kind=primitive,value=$0) }
+| CHAR																		{ decl_specifier(kind=primitive,value=$0) }
+| INT																		{ decl_specifier(kind=primitive,value=$0) }
+| FLOAT																		{ decl_specifier(kind=primitive,value=$0) }
+| BOOLEAN																	{ decl_specifier(kind=primitive,value=$0) }		
+;
+
+storage_specifier
+: STATIC																	{ decl_specifier(value=$0) }
+;
+
+declarator
+: direct_declarator
+| arrays direct_declarator													{ decl_declarator_array(arrays<ListNode>,direct_declarator<decl_declarator>) }
+;
+
+arrays
+: ARRAY																		{ ListNode() }
+| ARRAY arrays																{ ListNode(list<ListNode>) }
+;
+
+direct_declarator
+: ID																		{ decl_declarator_id(id=$0) }
+| ID LPAREN RPAREN															{ decl_declarator_method(id=$0) }
+| ID LPAREN parameters RPAREN												{ decl_declarator_method(id=$0,parameters<ListNode>) }
+| ID LPAREN vararg_parameter RPAREN						{ decl_declarator_method(id=$0,vararg_parameter<decl_vararg_parameter>) }
+| ID LPAREN parameters COMMA  vararg_parameter RPAREN						{ decl_declarator_method(id=$0,parameters<ListNode>,vararg_parameter<decl_vararg_parameter>) }
+;
+
+parameters
+: declaration																{ ListNode(node) }
+| parameters COMMA declaration												{ ListNode(list<ListNode>, node) }
+;
+
+vararg_parameter
+: specifiers ELLIPSE ID														{ decl_vararg_parameter(specifiers<decl_specifiers>,name=$2) }
+;
+//////////////////////////////////
+/////////////stmt
+//////////////////////////////////
+stmt
+: expression_stmt
+| compound_stmt
+| selection_stmt
+| iteration_stmt
+| jump_stmt
+;
+
+expression_stmt
+: SEMICOLON																	{ stmt_exp() }
+| exp SEMICOLON																{ stmt_exp(exp<Exp>) }
+;
+
+compound_stmt
+: LBRACE RBRACE																{ stmt_compound() }
+| LBRACE declaration_stmts 	RBRACE											{ stmt_compound(declaration_stmts<ListNode>) }
+;
+
+declaration_stmts
+: declaration	SEMICOLON													{ ListNode(node) }
+| declaration_stmts declaration	SEMICOLON									{ ListNode(list<ListNode>, node) }
+| stmt																		{ ListNode(node) }
+| declaration_stmts stmt													{ ListNode(list<ListNode>, node) }
+;
+
+selection_stmt
+: IF LPAREN exp RPAREN stmt													{ stmt_if(test<Exp>,true_stmt<Stmt>) }
+| IF LPAREN exp RPAREN stmt ELSE stmt										{ stmt_if(test<Exp>,true_stmt<Stmt>,false_stmt<Stmt>) }
+;
+
+iteration_stmt
+: WHILE LPAREN exp RPAREN stmt												{ stmt_while(test<Exp>,loop_stmt<Stmt>) }
+| FOR LPAREN ini_exp SEMICOLON test_exp SEMICOLON reini_exp RPAREN stmt		{ stmt_for(ini<ListNode>,test<ListNode>,reini<ListNode>,loop_stmt<Stmt>) }
+;
+
+ini_exp
+: declaration																{ ListNode(node) }
+| ini_exp COMMA declaration													{ ListNode(list<ListNode>, node) }
+| assignment_exp															{ ListNode(node) }
+| ini_exp COMMA assignment_exp												{ ListNode(list<ListNode>, node)}
+| __NULL__																	{ ListNode()}
+;
+
+test_exp
+: exp																		{ ListNode(node) }
+| __NULL__																	{ ListNode()}
+;
+
+reini_exp
+: exp																		{ ListNode(node) }
+| __NULL__																	{ ListNode()}
+;
+
+jump_stmt
+: CONTINUE SEMICOLON														{ stmt_continue() }
+| BREAK SEMICOLON															{ stmt_break() }
+| RETURN SEMICOLON															{ stmt_return() }
+| RETURN exp SEMICOLON														{ stmt_return(value<Exp>) }
+;
+
+//////////////////////////////////
+/////////////////exp
+/////////////////////////////////
+exp
+: assignment_exp
+| exp COMMA assignment_exp													{ exp_COMMA(op0<Exp>,op1<Exp>) } 
+;
+
+assignment_exp
+: logical_OR_exp
+| unary_exp ASSIGN assignment_exp											{ exp_ASSIGN(op0<Exp>,op1<Exp>) }
+;
+
+constant_exp
+: logical_OR_exp
+;
+
+logical_OR_exp
+: logical_AND_exp
+| logical_OR_exp OR logical_AND_exp   										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+;
+
+logical_AND_exp
+: equality_exp
+| logical_AND_exp AND equality_exp    										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+;
+
+equality_exp
+: relational_exp
+| equality_exp EQUAL relational_exp  										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+| equality_exp UNEQUAL relational_exp										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+;
+
+relational_exp
+: additive_exp
+| relational_exp LESS additive_exp											{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+| relational_exp GREAT additive_exp											{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+| relational_exp LESSE additive_exp											{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+| relational_exp GREATE additive_exp										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+;
+
+additive_exp
+: multiplicative_exp
+| additive_exp ADD multiplicative_exp										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+| additive_exp SUB multiplicative_exp										{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+;
+
+multiplicative_exp
+: cast_exp
+| multiplicative_exp MUL cast_exp											{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) } 
+| multiplicative_exp DIV cast_exp											{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) }
+| multiplicative_exp MOD cast_exp											{ exp_BINARY(op=$1<name>,op0<Exp>,op1<Exp>) }
+;
+
+cast_exp
+: unary_exp
+| LPAREN scope_name RPAREN cast_exp											{ exp_CAST(kind=class,scope_name<exp_SCOPE_NAME>,op0<Exp>) } 
+| LPAREN primitive_type RPAREN cast_exp										{ exp_CAST(kind=primitive,target<decl_specifier>,op0<Exp>) }
+;
+
+unary_exp
+: postfix_exp
+| INC unary_exp																{ exp_INCREMENT(op=INC, op0<Exp>) }
+| DEC unary_exp																{ exp_INCREMENT(op=DEC, op0<Exp>) }
+| SUB unary_exp																{ exp_NEG(op0<Exp>) }
+| NOT unary_exp																{ exp_NOT(op0<Exp>) }
+| NEW specifiers LPAREN RPAREN												{ exp_NEW(specifiers<decl_specifiers>) }
+| NEW specifiers LPAREN argument_exps RPAREN								{ exp_NEW(specifiers<decl_specifiers>, argument_exps<ListNode>) }
+| NEW specifiers indexs														{ exp_NEWA(specifiers<decl_specifiers>, indexs<ListNode>) }
+;
+
+indexs
+: LBRACKET exp RBRACKET														{ ListNode(node) }
+| LBRACKET exp RBRACKET indexs												{ ListNode(node,list<ListNode>) }
+;
+
+postfix_exp
+: primary_exp				
+| postfix_exp LBRACKET exp RBRACKET											{ exp_INDEX(base<Exp>,index<Exp>) }
+| postfix_exp LPAREN RPAREN													{ exp_INVOKE(base<Exp>) }
+| postfix_exp LPAREN argument_exps RPAREN									{ exp_INVOKE(base<Exp>,argument_exps<ListNode>) }
+| postfix_exp DOT ID														{ exp_FSELECT(base<Exp>, name=$2) }
+| postfix_exp INC															{ exp_INCREMENT(op=POST_INC, op0<Exp>) }
+| postfix_exp DEC															{ exp_INCREMENT(op=POST_DEC, op0<Exp>) }
+;
+
+primary_exp
+: scope_name																
+| INTEGER																	{ exp_INTEGER(value=$0) }
+| FLOATING																	{ exp_FLOATING(value=$0) }
+| NULL																		{ exp_NULL() }
+| TRUE																		{ exp_BOOLEAN(value=$0) }
+| FALSE																		{ exp_BOOLEAN(value=$0) }
+| STRING																	{ exp_STRING(value=$0) }
+| LPAREN exp RPAREN
+;
+
+scope_name
+: ID																		{ exp_SCOPE_NAME(id=$0) }
+| scope_name DOT ID															{ exp_SCOPE_NAME(list<exp_SCOPE_NAME>,id=$2)}
+;
+
+argument_exps
+: assignment_exp															{ ListNode(node) }
+| argument_exps COMMA assignment_exp										{ ListNode(list<ListNode>, node)}
+;

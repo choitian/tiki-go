@@ -1,0 +1,34 @@
+exp:
+or_exp
+;
+
+or_exp:
+cat_exp
+| cat_exp OR or_exp    { OR }
+;
+
+cat_exp:
+post_exp        
+| post_exp cat_exp     { CAT }
+;
+
+post_exp:
+primary_exp
+| primary_exp STAR      { STAR }
+| primary_exp PLUS      { PLUS }
+| primary_exp QUESTION  { QUESTION }
+;
+
+primary_exp:
+LITERAL              			        { LITERAL }
+| DOT                			        { DOT }
+| CHAR               			        { CHAR }
+| CLASS        			                { CLASS }
+| LBRACKET primary_exp_list RBRACKET    { ARRAY }
+| LPAREN exp RPAREN
+;
+
+primary_exp_list:
+primary_exp
+| primary_exp_list primary_exp
+;
