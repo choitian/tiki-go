@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"encoding/xml"
@@ -7,7 +7,7 @@ import (
 	"tools/lexical"
 )
 
-func main() {
+func test() {
 	byteValue, err := ioutil.ReadFile("lexical.xml")
 	if err != nil {
 		fmt.Println(err)

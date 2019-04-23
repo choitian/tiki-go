@@ -1,4 +1,4 @@
-package utils
+package util
 
 import (
 	"bufio"
@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-func LeadLines(path string) ([]string, error) {
+func ReadTextLines(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

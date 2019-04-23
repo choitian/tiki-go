@@ -1,4 +1,4 @@
-package lex
+package lexical
 
 import (
 	"encoding/xml"
