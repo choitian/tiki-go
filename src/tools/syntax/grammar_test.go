@@ -46,10 +46,10 @@ func TestLALRConstructCanonicalCollection(t *testing.T) {
 		}
 
 		if kernelSum != 383 {
-			t.Fatalf("kernelSum is wrong")
+			t.Fatalf("kernelSum is wrong.")
 		}
 		if gotoSum != 1465 {
-			t.Fatalf("gotoSum is wrong")
+			t.Fatalf("gotoSum is wrong.")
 		}
 	}
 }
