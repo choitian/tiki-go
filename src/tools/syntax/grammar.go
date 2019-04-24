@@ -2,9 +2,9 @@ package syntax
 
 import (
 	"fmt"
+	"github.com/emirpasic/gods/sets/treeset"
 	"io/ioutil"
 	"regexp"
-	"sort"
 	"strings"
 	"tools/util"
 )
@@ -13,13 +13,12 @@ const symbolEnd string = "__END__"
 const symbolNull string = "__NULL__"
 const symbolStart string = "__START__"
 
-type StringSet map[string]bool
 type Grammar struct {
-	Productions []Production
+	Productions []*Production
 
-	FST        map[string]StringSet
+	FST        map[string]*treeset.Set
 	IsTerminal map[string]bool
-	Nullable   StringSet
+	Nullable   *treeset.Set
 }
 
 type Production struct {
@@ -29,36 +28,47 @@ type Production struct {
 }
 
 func (prod *Production) String() string {
-	return fmt.Sprintf("%v --> %v %v", prod.Head, prod.Nodes, prod.Script)
+	return fmt.Sprintf("%v:%v %v", prod.Head, prod.Nodes, prod.Script)
 }
 func (prod *Production) IsNull() bool {
 	return len(prod.Nodes) == 1 && prod.Nodes[0] == symbolNull
 }
+func (prod *Production) IsInitial() bool {
+	return prod.Head == symbolStart
+}
 func (gram *Grammar) GetFst(symbol string) []string {
 	var keys []string
-	for k := range gram.FST[symbol] {
-		keys = append(keys, k)
+	for _, v := range gram.FST[symbol].Values() {
+		keys = append(keys, v.(string))
 	}
-	sort.Slice(keys, func(i int, j int) bool { return strings.Compare(keys[i], keys[j]) < 0 })
 	return keys
+}
+func (gram *Grammar) GetProductionsOfHead(head string) []*Production {
+	var prods []*Production
+	for _, prod := range gram.Productions {
+		if prod.Head == head {
+			prods = append(prods, prod)
+		}
+	}
+	return prods
 }
 func (gram *Grammar) computeAttributes() {
 	//initialize maps
-	gram.FST = make(map[string]StringSet)
+	gram.FST = make(map[string]*treeset.Set)
 	gram.IsTerminal = make(map[string]bool)
-	gram.Nullable = make(StringSet)
+	gram.Nullable = treeset.NewWithStringComparator()
 	//initialize IsTerminal & Nullable
 	for _, prod := range gram.Productions {
 		head := prod.Head
 		gram.IsTerminal[head] = false
-		gram.FST[head] = StringSet{}
+		gram.FST[head] = treeset.NewWithStringComparator()
 	}
 	//if not exist in IsTerminal as not being a head,then Is Terminal.
 	for _, prod := range gram.Productions {
 		for _, symbol := range prod.Nodes {
 			if _, ok := gram.IsTerminal[symbol]; !ok {
 				gram.IsTerminal[symbol] = true
-				gram.FST[symbol] = StringSet{symbol: true}
+				gram.FST[symbol] = treeset.NewWithStringComparator(symbol)
 			}
 		}
 	}
@@ -70,29 +80,26 @@ func (gram *Grammar) computeAttributes() {
 			if !prod.IsNull() {
 				for i, symbol := range prod.Nodes {
 					//add FST of symbol to head's
-					if fst, ok := gram.FST[symbol]; ok {
-						for val, _ := range fst {
-							if _, included := gram.FST[head][val]; !included {
-								gram.FST[head][val] = true
-								nothingChanged = false
-							}
+					for it := gram.FST[symbol].Iterator(); it.Next(); {
+						if !gram.FST[head].Contains(it.Value()) {
+							gram.FST[head].Add(it.Value())
+							nothingChanged = false
 						}
 					}
-
-					if !gram.Nullable[symbol] {
+					if !gram.Nullable.Contains(symbol) {
 						break
 					}
 
 					if i == len(prod.Nodes)-1 {
-						if _, included := gram.Nullable[head]; !included {
-							gram.Nullable[head] = true
+						if !gram.Nullable.Contains(head) {
+							gram.Nullable.Add(head)
 							nothingChanged = false
 						}
 					}
 				}
 			} else {
-				if _, included := gram.Nullable[head]; !included {
-					gram.Nullable[head] = true
+				if !gram.Nullable.Contains(head) {
+					gram.Nullable.Add(head)
 					nothingChanged = false
 				}
 			}
@@ -109,7 +116,7 @@ func NewGrammar(path string) *Grammar {
 	content := string(byteValue)
 
 	//load productions
-	var productions []Production
+	var productions []*Production
 	rSymbol := regexp.MustCompile(`(\s*(?P<Head>\w+)\s*)\:(?P<prods>((\s*\w+\s*)+(\s*\{.*\}\s*)?\|?)+)(\s*;)`)
 	for _, mSymbol := range rSymbol.FindAllStringSubmatch(content, -1) {
 		nm := util.MatchNamedMap(rSymbol, mSymbol)
@@ -124,10 +131,13 @@ func NewGrammar(path string) *Grammar {
 			if script == "" {
 				script = "{}"
 			}
-			productions = append(productions, Production{head, prodNodes, script})
+			productions = append(productions, &Production{head, prodNodes, script})
 		}
 	}
-	gm.Productions = productions
+	if len(productions) != 0 {
+		gm.Productions = []*Production{&Production{symbolStart, []string{productions[0].Head}, "{}"}}
+		gm.Productions = append(gm.Productions, productions...)
+	}
 	gm.computeAttributes()
 	return &gm
 }

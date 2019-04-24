@@ -1,0 +1,28 @@
+exp:
+or_exp
+;
+
+or_exp:
+cat_exp
+| cat_exp OR or_exp    { OR }
+;
+
+cat_exp:
+post_exp        
+| post_exp cat_exp     { CAT }
+;
+
+post_exp:
+primary_exp
+| primary_exp STAR      { STAR }
+| primary_exp PLUS      { PLUS }
+| primary_exp QUESTION  { QUESTION }
+;
+
+primary_exp:
+LITERAL              { LITERAL }
+| ARRAY              { ARRAY }
+| DOT                { DOT }
+| CHAR               { CHAR }
+| LPAREN exp RPAREN
+;
