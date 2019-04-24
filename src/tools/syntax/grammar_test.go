@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"tools/util"
 )
 
 func TestGrammerDescription(t *testing.T) {
@@ -16,9 +15,9 @@ func TestGrammerDescription(t *testing.T) {
 			log.Printf("%val\n", &p)
 		}
 	*/
-	for key, val := range gram.FST {
-		fst := util.StringBoolMapKeys(val)
-		//t.Logf("%val: %val\n", key, fst)
+	for key, _ := range gram.FST {
+		fst := gram.GetFst(key)
+		//t.Logf("%v: %v\n", key, fst)
 		if key == "exp" {
 			if strings.Join(fst, " ") != "DEC FALSE FLOATING ID INC INTEGER LPAREN NEW NOT NULL STRING SUB TRUE" {
 				t.Fatalf("Fst of 'exp' is wrong!")

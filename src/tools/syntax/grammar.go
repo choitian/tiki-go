@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"sort"
 	"strings"
 	"tools/util"
 )
@@ -32,6 +33,14 @@ func (prod *Production) String() string {
 }
 func (prod *Production) IsNull() bool {
 	return len(prod.Nodes) == 1 && prod.Nodes[0] == symbolNull
+}
+func (gram *Grammar) GetFst(symbol string) []string {
+	var keys []string
+	for k := range gram.FST[symbol] {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i int, j int) bool { return strings.Compare(keys[i], keys[j]) < 0 })
+	return keys
 }
 func (gram *Grammar) computeAttributes() {
 	//initialize maps
