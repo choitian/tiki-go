@@ -5,13 +5,15 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"tools/syntax/grammar"
+	"tools/syntax/parsing"
 )
 
-func TestLALRConstructCanonicalCollection(t *testing.T) {
+func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 	{
-		gram := NewGrammar("test/re_grammar_0.txt")
-		lalr := NewLookaheadLR(gram)
-		lalr.ConstructCanonicalCollection()
+		gram := grammar.NewGrammar("test/re_grammar_0.txt")
+		lalr := parsing.NewLookaheadLR(gram)
+		lalr.BuildCanonicalCollection()
 
 		if len(lalr.States) != 19 {
 			t.Fatalf("state size is wrong")
@@ -31,9 +33,9 @@ func TestLALRConstructCanonicalCollection(t *testing.T) {
 		}
 	}
 	{
-		gram := NewGrammar("test/dnf.txt")
-		lalr := NewLookaheadLR(gram)
-		lalr.ConstructCanonicalCollection()
+		gram := grammar.NewGrammar("test/dnf.txt")
+		lalr := parsing.NewLookaheadLR(gram)
+		lalr.BuildCanonicalCollection()
 
 		if len(lalr.States) != 249 {
 			t.Fatalf("state size is wrong")
@@ -53,9 +55,9 @@ func TestLALRConstructCanonicalCollection(t *testing.T) {
 		}
 	}
 }
-func TestGrammerDescription(t *testing.T) {
+func Test_Grammer(t *testing.T) {
 	//gram :=NewGrammar("test/re_grammar.txt")
-	gram := NewGrammar("test/dnf.txt")
+	gram := grammar.NewGrammar("test/dnf.txt")
 	/*
 		for _, p := range gram.Productions {
 			log.Printf("%val\n", &p)
@@ -85,13 +87,18 @@ func TestGrammerDescription(t *testing.T) {
 			}
 		}
 	}
-	/*
-		for key, val := range gram.Nullable {
-			if val {
-				t.Logf("%val: %val\n", key, val)
-			}
-		}
-	*/
+	if 4 != gram.Nullable.Size() {
+		t.Fatalf("Nullable.Size is wrong")
+	}
+	if !gram.Nullable.Contains("ini_exp") {
+		t.Fatalf("ini_exp is not nullable")
+	}
+	if !gram.Nullable.Contains("reini_exp") {
+		t.Fatalf("reini_exp is not nullable")
+	}
+	if !gram.Nullable.Contains("test_exp") {
+		t.Fatalf("test_exp is not nullable")
+	}
 }
 func TestMain(m *testing.M) {
 	log.SetOutput(os.Stderr)

@@ -1,24 +1,24 @@
-package syntax
+package grammar
 
 import (
 	"fmt"
-	"github.com/emirpasic/gods/sets/treeset"
+	set "github.com/emirpasic/gods/sets/treeset"
 	"io/ioutil"
 	"regexp"
 	"strings"
 	"tools/util"
 )
 
-const symbolEnd string = "__END__"
-const symbolNull string = "__NULL__"
-const symbolStart string = "__START__"
+const SymbolEnd string = "__END__"
+const SymbolNull string = "__NULL__"
+const SymbolStart string = "__START__"
 
 type Grammar struct {
 	Productions []*Production
 
-	FST        map[string]*treeset.Set
+	FST        map[string]*set.Set
 	IsTerminal map[string]bool
-	Nullable   *treeset.Set
+	Nullable   *set.Set
 }
 
 type Production struct {
@@ -31,17 +31,33 @@ func (prod *Production) String() string {
 	return fmt.Sprintf("%v:%v %v", prod.Head, prod.Nodes, prod.Script)
 }
 func (prod *Production) IsNull() bool {
-	return len(prod.Nodes) == 1 && prod.Nodes[0] == symbolNull
+	return len(prod.Nodes) == 1 && prod.Nodes[0] == SymbolNull
 }
 func (prod *Production) IsInitial() bool {
-	return prod.Head == symbolStart
+	return prod.Head == SymbolStart
 }
 func (gram *Grammar) GetFst(symbol string) []string {
-	var keys []string
-	for _, v := range gram.FST[symbol].Values() {
-		keys = append(keys, v.(string))
+	return util.ToArrayString(gram.FST[symbol].Values())
+}
+func (gram *Grammar) CalcFst(symbols ...string) (firstSet []interface{}, nullable bool) {
+	fst := set.NewWithStringComparator()
+	nullable = false
+	for i, symbol := range symbols {
+		//merge it,skip SymbolNull
+		if symbol != SymbolNull {
+			vs := gram.FST[symbol].Values()
+			fst.Add(vs...)
+		}
+
+		if !gram.Nullable.Contains(symbol) {
+			break
+		}
+		if i == len(symbols)-1 {
+			nullable = true
+		}
 	}
-	return keys
+	firstSet = fst.Values()
+	return
 }
 func (gram *Grammar) GetProductionsOfHead(head string) []*Production {
 	var prods []*Production
@@ -54,21 +70,26 @@ func (gram *Grammar) GetProductionsOfHead(head string) []*Production {
 }
 func (gram *Grammar) computeAttributes() {
 	//initialize maps
-	gram.FST = make(map[string]*treeset.Set)
+	gram.FST = make(map[string]*set.Set)
 	gram.IsTerminal = make(map[string]bool)
-	gram.Nullable = treeset.NewWithStringComparator()
+	gram.Nullable = set.NewWithStringComparator()
+
+	//initialize special symbols
+	gram.Nullable.Add(SymbolNull)
+	gram.IsTerminal[SymbolEnd] = true
+	gram.FST[SymbolEnd] = set.NewWithStringComparator(SymbolEnd)
 	//initialize IsTerminal & Nullable
 	for _, prod := range gram.Productions {
 		head := prod.Head
 		gram.IsTerminal[head] = false
-		gram.FST[head] = treeset.NewWithStringComparator()
+		gram.FST[head] = set.NewWithStringComparator()
 	}
 	//if not exist in IsTerminal as not being a head,then Is Terminal.
 	for _, prod := range gram.Productions {
 		for _, symbol := range prod.Nodes {
 			if _, ok := gram.IsTerminal[symbol]; !ok {
 				gram.IsTerminal[symbol] = true
-				gram.FST[symbol] = treeset.NewWithStringComparator(symbol)
+				gram.FST[symbol] = set.NewWithStringComparator(symbol)
 			}
 		}
 	}
@@ -77,31 +98,16 @@ func (gram *Grammar) computeAttributes() {
 		nothingChanged = true
 		for _, prod := range gram.Productions {
 			head := prod.Head
-			if !prod.IsNull() {
-				for i, symbol := range prod.Nodes {
-					//add FST of symbol to head's
-					for it := gram.FST[symbol].Iterator(); it.Next(); {
-						if !gram.FST[head].Contains(it.Value()) {
-							gram.FST[head].Add(it.Value())
-							nothingChanged = false
-						}
-					}
-					if !gram.Nullable.Contains(symbol) {
-						break
-					}
+			fst, nullable := gram.CalcFst(prod.Nodes...)
+			if nullable && !gram.Nullable.Contains(head) {
+				gram.Nullable.Add(head)
+				nothingChanged = false
+			}
 
-					if i == len(prod.Nodes)-1 {
-						if !gram.Nullable.Contains(head) {
-							gram.Nullable.Add(head)
-							nothingChanged = false
-						}
-					}
-				}
-			} else {
-				if !gram.Nullable.Contains(head) {
-					gram.Nullable.Add(head)
-					nothingChanged = false
-				}
+			oldSize := gram.FST[head].Size()
+			gram.FST[head].Add(fst...)
+			if gram.FST[head].Size() > oldSize {
+				nothingChanged = false
 			}
 		}
 	}
@@ -135,7 +141,7 @@ func NewGrammar(path string) *Grammar {
 		}
 	}
 	if len(productions) != 0 {
-		gm.Productions = []*Production{&Production{symbolStart, []string{productions[0].Head}, "{}"}}
+		gm.Productions = []*Production{&Production{SymbolStart, []string{productions[0].Head}, "{}"}}
 		gm.Productions = append(gm.Productions, productions...)
 	}
 	gm.computeAttributes()

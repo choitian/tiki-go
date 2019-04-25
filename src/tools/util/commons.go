@@ -55,3 +55,10 @@ func StringBoolMapKeys(m map[string]bool) []string {
 	sort.Slice(keys, func(i int, j int) bool { return strings.Compare(keys[i], keys[j]) < 0 })
 	return keys
 }
+func ToArrayString(values []interface{}) []string {
+	var keys []string
+	for _, v := range values {
+		keys = append(keys, v.(string))
+	}
+	return keys
+}
