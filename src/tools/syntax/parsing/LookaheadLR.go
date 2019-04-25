@@ -64,7 +64,7 @@ func (lalr *LookaheadLR) BuildCanonicalCollection() {
 		}
 	}
 }
-func (lalr *LookaheadLR) BuildPropagateAndSpontaneouTable() {
+func (lalr *LookaheadLR) BuildPropagateAndSpontaneousTable() {
 	for _, kernel := range lalr.ItemPool {
 		if kernel.IsKernel() {
 			kernel.SpontaneousTable = make(map[string]*set.Set)
@@ -96,6 +96,53 @@ func (lalr *LookaheadLR) BuildPropagateAndSpontaneouTable() {
 		}
 	}
 }
-func (lalr *LookaheadLR) doPropagation() {
 
+var TestSum001 int = 0
+
+func tryAddLookahead(lalr *LookaheadLR, unpropagated *stack.Stack, fromState *State, byItem *Item, lookaheads ...string) {
+	dotRight := byItem.DotRight()
+	peer := lalr.MakeLR0(byItem.prod, byItem.dot+1)
+	targetState := fromState.GotoTable[dotRight]
+
+	for _, lookahead := range lookaheads {
+		if targetState.AddLookahead(peer, lookahead) {
+			unit := [3]interface{}{targetState, peer, lookahead}
+			unpropagated.Push(unit)
+		}
+	}
+}
+func (lalr *LookaheadLR) DoPropagation() {
+	TestSum001 = 0
+	unpropagated := stack.New()
+	//initialize spontaneous lookahead
+	lalr.initialState.AddLookahead(lalr.initial, grammar.SymbolEnd)
+	unit := [3]interface{}{lalr.initialState, lalr.initial, grammar.SymbolEnd}
+	unpropagated.Push(unit)
+	for _, state := range lalr.States {
+		for _, kernel := range state.GetKernelItems() {
+			for itemHash, LookaheadSet := range kernel.SpontaneousTable {
+				item := lalr.ItemPool[itemHash]
+				LookaheadValues := util.ToArrayString(LookaheadSet.Values())
+				tryAddLookahead(lalr, unpropagated, state, item, LookaheadValues...)
+			}
+		}
+	}
+	//propagate away
+	for !unpropagated.Empty() {
+		val, _ := unpropagated.Pop()
+		unit := val.([3]interface{})
+		fromState := unit[0].(*State)
+		fromItem := unit[1].(*Item)
+		byLookahead := unit[2].(string)
+		for _, val := range fromItem.propagateTable.Values() {
+			byItem := val.(*Item)
+			tryAddLookahead(lalr, unpropagated, fromState, byItem, byLookahead)
+		}
+	}
+
+	for _, state := range lalr.States {
+		for _, lookaheadSet := range state.LookaheadTable {
+			TestSum001 += lookaheadSet.Size()
+		}
+	}
 }

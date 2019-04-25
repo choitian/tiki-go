@@ -98,16 +98,17 @@ func (state *State) Closure(lalr *LookaheadLR) {
 		}
 	}
 }
-func visitItemWithLookahead(lalr *LookaheadLR, uncheckedNonTerminalAndLookahead *stack.Stack, visited *set.Set, item *Item, lookaheadValues ...string) {
+func visitItemWithLookahead(lalr *LookaheadLR, unchecked *stack.Stack, visited *set.Set, item *Item, lookaheadValues ...string) {
 	dotRight := item.DotRight()
 	if dotRight != "" && !lalr.gram.IsTerminal[dotRight] {
 		for _, lookahead := range lookaheadValues {
-			fst, _ := lalr.gram.CalcFst(append(item.DotRightNodes(item.dot+1), lookahead)...)
+			fst, _ := lalr.gram.CalcFst(append(item.DotRightTailingNodes(), lookahead)...)
 			for _, val := range fst {
 				lookahead := val.(string)
 				key := dotRight + "/" + lookahead
 				if !visited.Contains(key) {
-					uncheckedNonTerminalAndLookahead.Push([2]string{dotRight, lookahead})
+					unit := [2]string{dotRight, lookahead}
+					unchecked.Push(unit)
 					visited.Add(key)
 				}
 			}
@@ -115,24 +116,24 @@ func visitItemWithLookahead(lalr *LookaheadLR, uncheckedNonTerminalAndLookahead 
 	}
 }
 func (state *State) ClosureWithLookahead(lalr *LookaheadLR) {
-	uncheckedNonTerminalAndLookahead := stack.New()
+	unchecked := stack.New()
 	visited := set.NewWithStringComparator()
 	for itemHash, lookaheadSet := range state.LookaheadTable {
 		item := lalr.ItemPool[itemHash]
 		lookaheadValues := util.ToArrayString(lookaheadSet.Values())
-		visitItemWithLookahead(lalr, uncheckedNonTerminalAndLookahead, visited, item, lookaheadValues...)
+		visitItemWithLookahead(lalr, unchecked, visited, item, lookaheadValues...)
 	}
-	for !uncheckedNonTerminalAndLookahead.Empty() {
-		val, _ := uncheckedNonTerminalAndLookahead.Pop()
-		pair := val.([2]string)
-		nonTerminal := pair[0]
-		lookahead := pair[1]
+	for !unchecked.Empty() {
+		val, _ := unchecked.Pop()
+		unit := val.([2]string)
+		nonTerminal := unit[0]
+		lookahead := unit[1]
 
 		prods := lalr.gram.GetProductionsOfHead(nonTerminal)
 		for _, prod := range prods {
 			item := lalr.MakeLR0(prod, 0)
 			if state.AddLookahead(item, lookahead) {
-				visitItemWithLookahead(lalr, uncheckedNonTerminalAndLookahead, visited, item, lookahead)
+				visitItemWithLookahead(lalr, unchecked, visited, item, lookahead)
 			}
 		}
 	}

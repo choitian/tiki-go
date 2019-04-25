@@ -31,14 +31,14 @@ func (item *Item) DotRight() string {
 	}
 	return ""
 }
-func (item *Item) DotRightNodes(dot int) []string {
+func (item *Item) DotRightTailingNodes() []string {
 	var nodes []string
 
 	if item.prod.IsNull() {
 		return nodes
 	}
-	if dot < len(item.prod.Nodes) {
-		nodes = item.prod.Nodes[item.dot:]
+	if (item.dot + 1) < len(item.prod.Nodes) {
+		nodes = item.prod.Nodes[(item.dot + 1):]
 	}
 	return nodes
 }

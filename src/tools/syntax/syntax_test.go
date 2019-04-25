@@ -11,28 +11,6 @@ import (
 
 func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 	{
-		gram := grammar.NewGrammar("test/re_grammar_0.txt")
-		lalr := parsing.NewLookaheadLR(gram)
-		lalr.BuildCanonicalCollection()
-
-		if len(lalr.States) != 19 {
-			t.Fatalf("state size is wrong")
-		}
-		kernelSum := 0
-		gotoSum := 0
-		for _, state := range lalr.States {
-			kernelSum += len(state.GetKernelItems())
-			gotoSum += len(state.GotoTable)
-		}
-
-		if kernelSum != 24 {
-			t.Fatalf("kernelSum is wrong")
-		}
-		if gotoSum != 42 {
-			t.Fatalf("gotoSum is wrong")
-		}
-	}
-	{
 		gram := grammar.NewGrammar("test/dnf.txt")
 		lalr := parsing.NewLookaheadLR(gram)
 		lalr.BuildCanonicalCollection()
@@ -53,14 +31,46 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 		if gotoSum != 1465 {
 			t.Fatalf("gotoSum is wrong.")
 		}
+
+		lalr.BuildPropagateAndSpontaneousTable()
+		lalr.DoPropagation()
+		log.Printf("TestSum001: %v\n", parsing.TestSum001)
 	}
+
+	{
+		gram := grammar.NewGrammar("test/re_grammar_0.txt")
+		lalr := parsing.NewLookaheadLR(gram)
+		lalr.BuildCanonicalCollection()
+
+		if len(lalr.States) != 19 {
+			t.Fatalf("state size is wrong")
+		}
+		kernelSum := 0
+		gotoSum := 0
+		for _, state := range lalr.States {
+			kernelSum += len(state.GetKernelItems())
+			gotoSum += len(state.GotoTable)
+		}
+
+		if kernelSum != 24 {
+			t.Fatalf("kernelSum is wrong")
+		}
+		if gotoSum != 42 {
+			t.Fatalf("gotoSum is wrong")
+		}
+
+		lalr.BuildPropagateAndSpontaneousTable()
+		lalr.DoPropagation()
+		log.Printf("TestSum001: %v\n", parsing.TestSum001)
+	}
+
 }
 func Test_Grammer(t *testing.T) {
 	//gram :=NewGrammar("test/re_grammar.txt")
 	gram := grammar.NewGrammar("test/dnf.txt")
 	/*
 		for _, p := range gram.Productions {
-			log.Printf("%val\n", &p)
+			log.Printf("%v\n", &p)
 		}
 	*/
 	for key, _ := range gram.FST {
