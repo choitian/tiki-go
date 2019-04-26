@@ -1,9 +1,11 @@
 package parsing
 
 import (
+	"encoding/xml"
 	set "github.com/emirpasic/gods/sets/treeset"
 	stack "github.com/emirpasic/gods/stacks/linkedliststack"
 	"log"
+	"os"
 	"tools/syntax/grammar"
 	"tools/util"
 )
@@ -37,6 +39,7 @@ func (lalr *LookaheadLR) AddState(state *State) (result *State, added bool) {
 	hash := state.HashString()
 	var exist bool
 	if _, exist = lalr.States[hash]; !exist {
+		state.id = len(lalr.States)
 		lalr.States[hash] = state
 	}
 	return lalr.States[hash], !exist
@@ -188,5 +191,45 @@ func (lalr *LookaheadLR) BuildParsingActionTable() {
 				}
 			}
 		}
+	}
+}
+func (lalr *LookaheadLR) ToXml() {
+	xmll := xmlLALR{}
+	for _, state := range lalr.States {
+		xmls := xmlState{}
+		for on, _ := range state.GotoTable {
+			xmlgt := &xmlGoto{On: on, State: state.id}
+			xmls.Gotos = append(xmls.Gotos, xmlgt)
+		}
+		for on, action := range state.ParsingActionTable {
+			actName := action[0].(string)
+
+			xmlact := &xmlAction{On: on, Do: actName}
+			xmls.Actions = append(xmls.Actions, xmlact)
+		}
+		xmll.States = append(xmll.States, xmls)
+	}
+
+	var f *os.File
+
+	// Check if thet file exists, err != nil if the file does not exist
+	_, err := os.Stat("my.xml")
+	if err != nil {
+		// if the file doesn't exist, open it with write and create flags
+		f, err = os.OpenFile("my.xml", os.O_WRONLY|os.O_CREATE, 0666)
+	} else {
+		// if the file does exist, open it with append and write flags
+		f, err = os.OpenFile("my.xml", os.O_APPEND|os.O_WRONLY, 0666)
+	}
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	e := xml.NewEncoder(f)
+
+	err = e.Encode(xmll)
+	if err != nil {
+		panic(err)
 	}
 }

@@ -13,6 +13,7 @@ type State struct {
 
 	GotoTable          map[string]*State
 	ParsingActionTable map[string][2]interface{}
+	id                 int
 }
 
 func (state *State) String() string {
