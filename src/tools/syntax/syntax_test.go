@@ -34,7 +34,16 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 
 		lalr.BuildPropagateAndSpontaneousTable()
 		lalr.DoPropagation()
-		log.Printf("TestSum001: %v\n", parsing.TestSum001)
+
+		TestLookaheadSum := 0
+		for _, state := range lalr.States {
+			for _, lookaheadSet := range state.LookaheadTable {
+				TestLookaheadSum += lookaheadSet.Size()
+			}
+		}
+		log.Printf("TestLookaheadSum: %v\n", TestLookaheadSum)
+
+		lalr.BuildParsingActionTable()
 	}
 
 	{
@@ -61,7 +70,16 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 
 		lalr.BuildPropagateAndSpontaneousTable()
 		lalr.DoPropagation()
-		log.Printf("TestSum001: %v\n", parsing.TestSum001)
+
+		TestLookaheadSum := 0
+		for _, state := range lalr.States {
+			for _, lookaheadSet := range state.LookaheadTable {
+				TestLookaheadSum += lookaheadSet.Size()
+			}
+		}
+		log.Printf("TestLookaheadSum: %v\n", TestLookaheadSum)
+
+		lalr.BuildParsingActionTable()
 	}
 
 }

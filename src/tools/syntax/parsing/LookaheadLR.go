@@ -3,6 +3,7 @@ package parsing
 import (
 	set "github.com/emirpasic/gods/sets/treeset"
 	stack "github.com/emirpasic/gods/stacks/linkedliststack"
+	"log"
 	"tools/syntax/grammar"
 	"tools/util"
 )
@@ -96,9 +97,6 @@ func (lalr *LookaheadLR) BuildPropagateAndSpontaneousTable() {
 		}
 	}
 }
-
-var TestSum001 int = 0
-
 func tryAddLookahead(lalr *LookaheadLR, unpropagated *stack.Stack, fromState *State, byItem *Item, lookaheads ...string) {
 	dotRight := byItem.DotRight()
 	peer := lalr.MakeLR0(byItem.prod, byItem.dot+1)
@@ -112,7 +110,6 @@ func tryAddLookahead(lalr *LookaheadLR, unpropagated *stack.Stack, fromState *St
 	}
 }
 func (lalr *LookaheadLR) DoPropagation() {
-	TestSum001 = 0
 	unpropagated := stack.New()
 	//initialize spontaneous lookahead
 	lalr.initialState.AddLookahead(lalr.initial, grammar.SymbolEnd)
@@ -139,10 +136,68 @@ func (lalr *LookaheadLR) DoPropagation() {
 			tryAddLookahead(lalr, unpropagated, fromState, byItem, byLookahead)
 		}
 	}
-
+}
+func (lalr *LookaheadLR) BuildParsingActionTable() {
 	for _, state := range lalr.States {
-		for _, lookaheadSet := range state.LookaheadTable {
-			TestSum001 += lookaheadSet.Size()
+
+		state.ClosureWithLookahead(lalr)
+		state.ParsingActionTable = make(map[string][2]interface{})
+
+		for itemHash, lookaheadSet := range state.LookaheadTable {
+			item := lalr.ItemPool[itemHash]
+			lookaheadValues := util.ToArrayString(lookaheadSet.Values())
+			dotRight := item.DotRight()
+			for _, lookahead := range lookaheadValues {
+				if dotRight != "" {
+					//shift
+					if lalr.gram.IsTerminal[dotRight] {
+						action := [2]interface{}{}
+						action[0] = "shift"
+						action[1] = state.GotoTable[dotRight]
+
+						if oldAction, exist := state.ParsingActionTable[dotRight]; exist {
+							actName := oldAction[0].(string)
+							switch actName {
+							case "reduce":
+								actProd := oldAction[1].(*grammar.Production)
+								log.Printf("Warning Conflicting(S/R): shift %v / reduce %v", dotRight, actProd.String())
+								state.ParsingActionTable[dotRight] = action
+							}
+						} else {
+							state.ParsingActionTable[dotRight] = action
+						}
+
+					}
+				} else {
+					//accept
+					if item.prod.Head == grammar.SymbolStart && lookahead == grammar.SymbolEnd {
+						action := [2]interface{}{}
+						action[0] = "accept"
+
+						state.ParsingActionTable[lookahead] = action
+					} else
+					//reduce
+					{
+						action := [2]interface{}{}
+						action[0] = "reduce"
+						action[1] = item.prod
+
+						if oldAction, exist := state.ParsingActionTable[lookahead]; exist {
+							actName := oldAction[0].(string)
+							switch actName {
+							case "reduce":
+								actProd := oldAction[1].(*grammar.Production)
+								log.Fatalf("Error Conflicting(R/R): reduce %v / reduce %v", actProd.String(), item.prod.String())
+							case "shift":
+								log.Printf("Warning Conflicting(S/R): shift %v / reduce %v", lookahead, item.prod.String())
+							}
+						} else {
+							state.ParsingActionTable[lookahead] = action
+						}
+
+					}
+				}
+			}
 		}
 	}
 }

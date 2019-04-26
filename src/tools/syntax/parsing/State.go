@@ -11,7 +11,8 @@ type State struct {
 	Items          *set.Set
 	LookaheadTable map[string]*set.Set
 
-	GotoTable map[string]*State
+	GotoTable          map[string]*State
+	ParsingActionTable map[string][2]interface{}
 }
 
 func (state *State) String() string {
