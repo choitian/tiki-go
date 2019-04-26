@@ -41,7 +41,9 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 				TestLookaheadSum += lookaheadSet.Size()
 			}
 		}
-		log.Printf("TestLookaheadSum: %v\n", TestLookaheadSum)
+		if TestLookaheadSum != 4825 {
+			t.Fatalf("TestLookaheadSum is wrong")
+		}
 
 		lalr.BuildParsingActionTable()
 	}
@@ -77,7 +79,9 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 				TestLookaheadSum += lookaheadSet.Size()
 			}
 		}
-		log.Printf("TestLookaheadSum: %v\n", TestLookaheadSum)
+		if TestLookaheadSum != 154 {
+			t.Fatalf("TestLookaheadSum is wrong")
+		}
 
 		lalr.BuildParsingActionTable()
 	}

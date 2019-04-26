@@ -151,50 +151,39 @@ func (lalr *LookaheadLR) BuildParsingActionTable() {
 				if dotRight != "" {
 					//shift
 					if lalr.gram.IsTerminal[dotRight] {
-						action := [2]interface{}{}
-						action[0] = "shift"
-						action[1] = state.GotoTable[dotRight]
-
+						action := [2]interface{}{"shift"}
 						if oldAction, exist := state.ParsingActionTable[dotRight]; exist {
 							actName := oldAction[0].(string)
 							switch actName {
 							case "reduce":
-								actProd := oldAction[1].(*grammar.Production)
-								log.Printf("Warning Conflicting(S/R): shift %v / reduce %v", dotRight, actProd.String())
+								reduceProd := oldAction[1].(*grammar.Production)
+								log.Printf("Warning Conflicting(S/R),perfer shift: shift %v / reduce %v", dotRight, reduceProd)
 								state.ParsingActionTable[dotRight] = action
 							}
 						} else {
 							state.ParsingActionTable[dotRight] = action
 						}
-
 					}
 				} else {
 					//accept
 					if item.prod.Head == grammar.SymbolStart && lookahead == grammar.SymbolEnd {
-						action := [2]interface{}{}
-						action[0] = "accept"
-
+						action := [2]interface{}{"accept"}
 						state.ParsingActionTable[lookahead] = action
-					} else
-					//reduce
+					} else //reduce
 					{
-						action := [2]interface{}{}
-						action[0] = "reduce"
-						action[1] = item.prod
-
+						action := [2]interface{}{"reduce", item.prod}
 						if oldAction, exist := state.ParsingActionTable[lookahead]; exist {
 							actName := oldAction[0].(string)
 							switch actName {
 							case "reduce":
-								actProd := oldAction[1].(*grammar.Production)
-								log.Fatalf("Error Conflicting(R/R): reduce %v / reduce %v", actProd.String(), item.prod.String())
+								reduceProd := oldAction[1].(*grammar.Production)
+								log.Fatalf("Error Conflicting(R/R): reduce %v / reduce %v", reduceProd, item.prod)
 							case "shift":
-								log.Printf("Warning Conflicting(S/R): shift %v / reduce %v", lookahead, item.prod.String())
+								log.Printf("Warning Conflicting(S/R),perfer shift: shift %v / reduce %v", lookahead, item.prod)
 							}
 						} else {
 							state.ParsingActionTable[lookahead] = action
 						}
-
 					}
 				}
 			}

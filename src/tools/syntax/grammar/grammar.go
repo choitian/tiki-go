@@ -28,7 +28,7 @@ type Production struct {
 }
 
 func (prod *Production) String() string {
-	return fmt.Sprintf("%v:%v %v", prod.Head, prod.Nodes, prod.Script)
+	return fmt.Sprintf("%v:%v", prod.Head, prod.Nodes)
 }
 func (prod *Production) IsNull() bool {
 	return len(prod.Nodes) == 1 && prod.Nodes[0] == SymbolNull
