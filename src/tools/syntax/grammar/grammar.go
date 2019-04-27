@@ -25,6 +25,8 @@ type Production struct {
 	Head   string
 	Nodes  []string
 	Script string
+
+	Id int
 }
 
 func (prod *Production) String() string {
@@ -79,10 +81,12 @@ func (gram *Grammar) computeAttributes() {
 	gram.IsTerminal[SymbolEnd] = true
 	gram.FST[SymbolEnd] = set.NewWithStringComparator(SymbolEnd)
 	//initialize IsTerminal & Nullable
-	for _, prod := range gram.Productions {
+	for i, prod := range gram.Productions {
 		head := prod.Head
 		gram.IsTerminal[head] = false
 		gram.FST[head] = set.NewWithStringComparator()
+
+		prod.Id = i
 	}
 	//if not exist in IsTerminal as not being a head,then Is Terminal.
 	for _, prod := range gram.Productions {
@@ -137,11 +141,11 @@ func NewGrammar(path string) *Grammar {
 			if script == "" {
 				script = "{}"
 			}
-			productions = append(productions, &Production{head, prodNodes, script})
+			productions = append(productions, &Production{Head: head, Nodes: prodNodes, Script: script})
 		}
 	}
 	if len(productions) != 0 {
-		gm.Productions = []*Production{&Production{SymbolStart, []string{productions[0].Head}, "{}"}}
+		gm.Productions = []*Production{&Production{Head: SymbolStart, Nodes: []string{productions[0].Head}, Script: "{}"}}
 		gm.Productions = append(gm.Productions, productions...)
 	}
 	gm.computeAttributes()

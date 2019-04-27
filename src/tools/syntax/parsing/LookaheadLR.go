@@ -6,6 +6,8 @@ import (
 	stack "github.com/emirpasic/gods/stacks/linkedliststack"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"tools/syntax/grammar"
 	"tools/util"
 )
@@ -39,7 +41,7 @@ func (lalr *LookaheadLR) AddState(state *State) (result *State, added bool) {
 	hash := state.HashString()
 	var exist bool
 	if _, exist = lalr.States[hash]; !exist {
-		state.id = len(lalr.States)
+		state.Id = len(lalr.States)
 		lalr.States[hash] = state
 	}
 	return lalr.States[hash], !exist
@@ -195,15 +197,24 @@ func (lalr *LookaheadLR) BuildParsingActionTable() {
 }
 func (lalr *LookaheadLR) ToXml() {
 	xmll := xmlLALR{}
+
+	for _, prod := range lalr.gram.Productions {
+		xmlp := xmlProduction{Head: prod.Head, Nodes: strings.Join(prod.Nodes, "|"), Script: prod.Script, Len: len(prod.Nodes), Id: prod.Id}
+		xmll.Productions = append(xmll.Productions, xmlp)
+	}
+
 	for _, state := range lalr.States {
-		xmls := xmlState{}
-		for on, _ := range state.GotoTable {
-			xmlgt := &xmlGoto{On: on, State: state.id}
+		xmls := xmlState{Id: state.Id}
+		for on, target := range state.GotoTable {
+			xmlgt := &xmlGoto{On: on, State: target.Id}
 			xmls.Gotos = append(xmls.Gotos, xmlgt)
 		}
 		for on, action := range state.ParsingActionTable {
 			actName := action[0].(string)
-
+			if actName == "reduce" {
+				reduceProd := action[1].(*grammar.Production)
+				actName += strconv.Itoa(reduceProd.Id)
+			}
 			xmlact := &xmlAction{On: on, Do: actName}
 			xmls.Actions = append(xmls.Actions, xmlact)
 		}
@@ -213,13 +224,13 @@ func (lalr *LookaheadLR) ToXml() {
 	var f *os.File
 
 	// Check if thet file exists, err != nil if the file does not exist
-	_, err := os.Stat("my.xml")
+	_, err := os.Stat("lalr.xml")
 	if err != nil {
 		// if the file doesn't exist, open it with write and create flags
-		f, err = os.OpenFile("my.xml", os.O_WRONLY|os.O_CREATE, 0666)
+		f, err = os.OpenFile("lalr.xml", os.O_WRONLY|os.O_CREATE, 0666)
 	} else {
 		// if the file does exist, open it with append and write flags
-		f, err = os.OpenFile("my.xml", os.O_APPEND|os.O_WRONLY, 0666)
+		f, err = os.OpenFile("lalr.xml", os.O_WRONLY|os.O_TRUNC, 0666)
 	}
 	if err != nil {
 		panic(err)

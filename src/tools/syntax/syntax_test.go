@@ -76,6 +76,8 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 		assertEqual(t, "TestLookaheadSum", 4791, TestLookaheadSum)
 
 		lalr.BuildParsingActionTable()
+
+		lalr.ToXml()
 	}
 	{
 		gram := grammar.NewGrammar("test/re_grammar_0.txt")
@@ -104,19 +106,11 @@ func Test_Parsing_BuildCanonicalCollection(t *testing.T) {
 		}
 		assertEqual(t, "TestLookaheadSum", 154, TestLookaheadSum)
 		lalr.BuildParsingActionTable()
-
-		lalr.ToXml()
 	}
 
 }
 func Test_Grammer(t *testing.T) {
-	//gram :=NewGrammar("test/re_grammar.txt")
 	gram := grammar.NewGrammar("test/dnf0.txt")
-	/*
-		for _, p := range gram.Productions {
-			log.Printf("%v\n", &p)
-		}
-	*/
 	for key, _ := range gram.FST {
 		fst := gram.GetFst(key)
 		//t.Logf("%v: %v\n", key, fst)
