@@ -127,17 +127,17 @@ func NewGrammar(path string) *Grammar {
 
 	//load productions
 	var productions []*Production
-	rSymbol := regexp.MustCompile(`(\s*(?P<Head>\w+)\s*)\:(?P<prods>((\s*\w+\s*)+(\s*\{.*\}\s*)?\|?)+)(\s*;)`)
+	rSymbol := regexp.MustCompile(`(\s*(?P<head>\w+)\s*)\:(?P<prods>((\s*\w+\s*)+(\s*\{.*\}\s*)?\|?)+)(\s*;)`)
 	for _, mSymbol := range rSymbol.FindAllStringSubmatch(content, -1) {
 		nm := util.MatchNamedMap(rSymbol, mSymbol)
-		head := strings.TrimSpace(nm["Head"])
+		head := strings.TrimSpace(nm["head"])
 		prods := strings.TrimSpace(nm["prods"])
-		rProd := regexp.MustCompile(`(?P<prod>(\s*\w+\s*)+)(\s*(?P<Script>\{.*\})\s*)?\|?`)
+		rProd := regexp.MustCompile(`(?P<prod>(\s*\w+\s*)+)(\s*(?P<script>\{.*\})\s*)?\|?`)
 		for _, mProd := range rProd.FindAllStringSubmatch(prods, -1) {
 			nm := util.MatchNamedMap(rProd, mProd)
 			prod := strings.TrimSpace(nm["prod"])
 			prodNodes := regexp.MustCompile(`\s+`).Split(prod, -1)
-			script := strings.TrimSpace(nm["Script"])
+			script := strings.TrimSpace(nm["script"])
 			if script == "" {
 				script = "{}"
 			}
