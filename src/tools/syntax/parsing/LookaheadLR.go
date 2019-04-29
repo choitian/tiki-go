@@ -15,7 +15,6 @@ import (
 type LookaheadLR struct {
 	gram     *grammar.Grammar
 	initial  *Item
-	accept   *Item
 	ItemPool map[string]*Item
 
 	initialState *State
@@ -37,6 +36,73 @@ func (lalr *LookaheadLR) MakeLR0(prod *grammar.Production, dot int) *Item {
 	}
 	return lalr.ItemPool[hash]
 }
+func (lalr *LookaheadLR) visitItemWithLookahead(unchecked *stack.Stack, visited *set.Set, item *Item, lookaheadValues ...string) {
+	dotRight := item.DotRight()
+	if dotRight != "" && !lalr.gram.IsTerminal[dotRight] {
+		for _, lookahead := range lookaheadValues {
+			fst, _ := lalr.gram.CalcFst(append(item.DotRightTailingNodes(), lookahead)...)
+			for _, val := range fst {
+				lookahead := val.(string)
+				key := dotRight + "/" + lookahead
+				if !visited.Contains(key) {
+					unit := [2]string{dotRight, lookahead}
+					unchecked.Push(unit)
+					visited.Add(key)
+				}
+			}
+		}
+	}
+}
+func (lalr *LookaheadLR) ClosureWithLookahead(state *State) {
+	unchecked := stack.New()
+	visited := set.NewWithStringComparator()
+	for itemHash, lookaheadSet := range state.LookaheadTable {
+		item := lalr.ItemPool[itemHash]
+		lookaheadValues := util.ToArrayString(lookaheadSet.Values())
+		lalr.visitItemWithLookahead(unchecked, visited, item, lookaheadValues...)
+	}
+	for !unchecked.Empty() {
+		val, _ := unchecked.Pop()
+		unit := val.([2]string)
+		nonTerminal := unit[0]
+		lookahead := unit[1]
+
+		prods := lalr.gram.GetProductionsOfHead(nonTerminal)
+		for _, prod := range prods {
+			item := lalr.MakeLR0(prod, 0)
+			if state.AddLookahead(item, lookahead) {
+				lalr.visitItemWithLookahead(unchecked, visited, item, lookahead)
+			}
+		}
+	}
+}
+func (lalr *LookaheadLR) visitItem(uncheckedNonTerminal *stack.Stack, visited *set.Set, item *Item) {
+	dotRight := item.DotRight()
+	if dotRight != "" && !lalr.gram.IsTerminal[dotRight] && !visited.Contains(dotRight) {
+		uncheckedNonTerminal.Push(dotRight)
+		visited.Add(dotRight)
+	}
+}
+func (lalr *LookaheadLR) Closure(state *State) {
+	uncheckedNonTerminal := stack.New()
+	visited := set.NewWithStringComparator()
+	for _, item := range state.GetItems() {
+		lalr.visitItem(uncheckedNonTerminal, visited, item)
+	}
+
+	for !uncheckedNonTerminal.Empty() {
+		val, _ := uncheckedNonTerminal.Pop()
+		nonTerminal := val.(string)
+		prods := lalr.gram.GetProductionsOfHead(nonTerminal)
+		for _, prod := range prods {
+			item := lalr.MakeLR0(prod, 0)
+			if !state.Items.Contains(item) {
+				state.Items.Add(item)
+				lalr.visitItem(uncheckedNonTerminal, visited, item)
+			}
+		}
+	}
+}
 func (lalr *LookaheadLR) AddState(state *State) (result *State, added bool) {
 	hash := state.HashString()
 	var exist bool
@@ -46,9 +112,22 @@ func (lalr *LookaheadLR) AddState(state *State) (result *State, added bool) {
 	}
 	return lalr.States[hash], !exist
 }
+func (lalr *LookaheadLR) GroupGOTOTable(state *State) map[string]*State {
+	gotoTable := make(map[string]*State)
+	for _, item := range state.GetItems() {
+		dotRight := item.DotRight()
+		if dotRight != "" {
+			if _, ok := gotoTable[dotRight]; !ok {
+				gotoTable[dotRight] = NewState()
+			}
+			peer := lalr.MakeLR0(item.prod, item.dot+1)
+			gotoTable[dotRight].Items.Add(peer)
+		}
+	}
+	return gotoTable
+}
 func (lalr *LookaheadLR) BuildCanonicalCollection() {
 	lalr.initial = lalr.MakeLR0(lalr.gram.Productions[0], 0)
-	lalr.accept = lalr.MakeLR0(lalr.gram.Productions[0], 1)
 
 	lalr.initialState = NewState(lalr.initial)
 	lalr.AddState(lalr.initialState)
@@ -58,8 +137,8 @@ func (lalr *LookaheadLR) BuildCanonicalCollection() {
 	for !uncheckedState.Empty() {
 		val, _ := uncheckedState.Pop()
 		state := val.(*State)
-		state.Closure(lalr)
-		gotoTable := state.GroupGOTOTable(lalr)
+		lalr.Closure(state)
+		gotoTable := lalr.GroupGOTOTable(state)
 
 		for onSymbol, targetState := range gotoTable {
 			result, added := lalr.AddState(targetState)
@@ -78,7 +157,7 @@ func (lalr *LookaheadLR) BuildPropagateAndSpontaneousTable() {
 
 			dummyState := NewState(kernel)
 			dummyState.AddLookahead(kernel, grammar.SymbolEnd)
-			dummyState.ClosureWithLookahead(lalr)
+			lalr.ClosureWithLookahead(dummyState)
 
 			for itemHash, lookaheadSet := range dummyState.LookaheadTable {
 				item := lalr.ItemPool[itemHash]
@@ -145,7 +224,7 @@ func (lalr *LookaheadLR) DoPropagation() {
 func (lalr *LookaheadLR) BuildParsingActionTable() {
 	for _, state := range lalr.States {
 
-		state.ClosureWithLookahead(lalr)
+		lalr.ClosureWithLookahead(state)
 		state.ParsingActionTable = make(map[string][2]interface{})
 
 		for itemHash, lookaheadSet := range state.LookaheadTable {
