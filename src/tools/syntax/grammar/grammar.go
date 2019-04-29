@@ -35,9 +35,6 @@ func (prod *Production) String() string {
 func (prod *Production) IsNull() bool {
 	return len(prod.Nodes) == 1 && prod.Nodes[0] == SymbolNull
 }
-func (prod *Production) IsInitial() bool {
-	return prod.Head == SymbolStart
-}
 func (gram *Grammar) GetFst(symbol string) []string {
 	return util.ToArrayString(gram.FST[symbol].Values())
 }

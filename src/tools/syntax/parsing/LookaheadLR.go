@@ -13,11 +13,12 @@ import (
 )
 
 type LookaheadLR struct {
-	gram     *grammar.Grammar
-	initial  *Item
+	gram *grammar.Grammar
+
 	ItemPool map[string]*Item
 
-	initialState *State
+	InitialState *State
+	InitialItem  *Item
 	States       map[string]*State
 }
 
@@ -127,13 +128,13 @@ func (lalr *LookaheadLR) GroupGOTOTable(state *State) map[string]*State {
 	return gotoTable
 }
 func (lalr *LookaheadLR) BuildCanonicalCollection() {
-	lalr.initial = lalr.MakeLR0(lalr.gram.Productions[0], 0)
+	lalr.InitialItem = lalr.MakeLR0(lalr.gram.Productions[0], 0)
 
-	lalr.initialState = NewState(lalr.initial)
-	lalr.AddState(lalr.initialState)
+	lalr.InitialState = NewState(lalr.InitialItem)
+	lalr.AddState(lalr.InitialState)
 
 	uncheckedState := stack.New()
-	uncheckedState.Push(lalr.initialState)
+	uncheckedState.Push(lalr.InitialState)
 	for !uncheckedState.Empty() {
 		val, _ := uncheckedState.Pop()
 		state := val.(*State)
@@ -153,7 +154,7 @@ func (lalr *LookaheadLR) BuildPropagateAndSpontaneousTable() {
 	for _, kernel := range lalr.ItemPool {
 		if kernel.IsKernel() {
 			kernel.SpontaneousTable = make(map[string]*set.Set)
-			kernel.propagateTable = set.NewWith(byHash)
+			kernel.PropagateTable = set.NewWith(byHash)
 
 			dummyState := NewState(kernel)
 			dummyState.AddLookahead(kernel, grammar.SymbolEnd)
@@ -167,13 +168,12 @@ func (lalr *LookaheadLR) BuildPropagateAndSpontaneousTable() {
 					for _, lookahead := range lookaheadValues {
 						if lookahead != grammar.SymbolEnd {
 							hash := item.HashString()
-							if lookaheadSet, exist := kernel.SpontaneousTable[hash]; !exist {
-								kernel.SpontaneousTable[hash] = set.NewWithStringComparator(lookahead)
-							} else {
-								lookaheadSet.Add(lookahead)
+							if _, exist := kernel.SpontaneousTable[hash]; !exist {
+								kernel.SpontaneousTable[hash] = set.NewWithStringComparator()
 							}
+							kernel.SpontaneousTable[hash].Add(lookahead)
 						} else {
-							kernel.propagateTable.Add(item)
+							kernel.PropagateTable.Add(item)
 						}
 					}
 				}
@@ -188,22 +188,22 @@ func tryAddLookahead(lalr *LookaheadLR, unpropagated *stack.Stack, fromState *St
 
 	for _, lookahead := range lookaheads {
 		if targetState.AddLookahead(peer, lookahead) {
-			unit := [3]interface{}{targetState, peer, lookahead}
-			unpropagated.Push(unit)
+			info := [3]interface{}{targetState, peer, lookahead}
+			unpropagated.Push(info)
 		}
 	}
 }
 func (lalr *LookaheadLR) DoPropagation() {
 	unpropagated := stack.New()
 	//initialize spontaneous lookahead
-	lalr.initialState.AddLookahead(lalr.initial, grammar.SymbolEnd)
-	unit := [3]interface{}{lalr.initialState, lalr.initial, grammar.SymbolEnd}
-	unpropagated.Push(unit)
+	lalr.InitialState.AddLookahead(lalr.InitialItem, grammar.SymbolEnd)
+	info := [3]interface{}{lalr.InitialState, lalr.InitialItem, grammar.SymbolEnd}
+	unpropagated.Push(info)
 	for _, state := range lalr.States {
 		for _, kernel := range state.GetKernelItems() {
-			for itemHash, LookaheadSet := range kernel.SpontaneousTable {
+			for itemHash, lookaheadSet := range kernel.SpontaneousTable {
 				item := lalr.ItemPool[itemHash]
-				LookaheadValues := util.ToArrayString(LookaheadSet.Values())
+				LookaheadValues := util.ToArrayString(lookaheadSet.Values())
 				tryAddLookahead(lalr, unpropagated, state, item, LookaheadValues...)
 			}
 		}
@@ -211,11 +211,11 @@ func (lalr *LookaheadLR) DoPropagation() {
 	//propagate away
 	for !unpropagated.Empty() {
 		val, _ := unpropagated.Pop()
-		unit := val.([3]interface{})
-		fromState := unit[0].(*State)
-		fromItem := unit[1].(*Item)
-		byLookahead := unit[2].(string)
-		for _, val := range fromItem.propagateTable.Values() {
+		info := val.([3]interface{})
+		fromState := info[0].(*State)
+		fromItem := info[1].(*Item)
+		byLookahead := info[2].(string)
+		for _, val := range fromItem.PropagateTable.Values() {
 			byItem := val.(*Item)
 			tryAddLookahead(lalr, unpropagated, fromState, byItem, byLookahead)
 		}
@@ -274,7 +274,7 @@ func (lalr *LookaheadLR) BuildParsingActionTable() {
 		}
 	}
 }
-func (lalr *LookaheadLR) ToXml() {
+func (lalr *LookaheadLR) ToXml(file string) {
 	xmll := xmlLALR{}
 
 	for _, prod := range lalr.gram.Productions {
@@ -303,23 +303,21 @@ func (lalr *LookaheadLR) ToXml() {
 	var f *os.File
 
 	// Check if thet file exists, err != nil if the file does not exist
-	_, err := os.Stat("lalr.xml")
+	_, err := os.Stat(file)
 	if err != nil {
 		// if the file doesn't exist, open it with write and create flags
-		f, err = os.OpenFile("lalr.xml", os.O_WRONLY|os.O_CREATE, 0666)
+		f, err = os.OpenFile(file, os.O_WRONLY|os.O_CREATE, 0666)
 	} else {
-		// if the file does exist, open it with append and write flags
-		f, err = os.OpenFile("lalr.xml", os.O_WRONLY|os.O_TRUNC, 0666)
+		// if the file does exist, open it with write and truncate flags
+		f, err = os.OpenFile(file, os.O_WRONLY|os.O_TRUNC, 0666)
 	}
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
-
-	e := xml.NewEncoder(f)
-
-	err = e.Encode(xmll)
+	buf, err := xml.MarshalIndent(xmll, "", "\t")
 	if err != nil {
 		panic(err)
 	}
+	f.Write(buf)
 }

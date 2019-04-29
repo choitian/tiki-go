@@ -20,15 +20,9 @@ primary_exp
 ;
 
 primary_exp:
-LITERAL              			        { LITERAL }
-| DOT                			        { DOT }
-| CHAR               			        { CHAR }
-| CLASS        			                { CLASS }
-| LBRACKET primary_exp_list RBRACKET    { ARRAY }
+LITERAL              { LITERAL }
+| ARRAY              { ARRAY }
+| DOT                { DOT }
+| CHAR               { CHAR }
 | LPAREN exp RPAREN
-;
-
-primary_exp_list:
-primary_exp
-| primary_exp_list primary_exp
 ;
